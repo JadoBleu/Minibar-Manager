@@ -5,7 +5,9 @@
 
 ## Student Info
 
-Add your Name, CRN, and Semester Year here using unordered bullets in Markdown.
+* Jefferson Wang
+* CRN 37902
+* Spring 2021
 
 ## Directions
 
@@ -15,7 +17,8 @@ As your project is unique, you will be required to help craft your grading scale
 
 ## Program Description
 
-Please enter the description of your individual program here.
+### Minibar Manager
+This program is a helper program that retains an inventory of liquors and other additions available. It will have a database of drink recipes that it will search through based on your available drinks and display possible recipes. The recipes will have a section that allows the user to favorite and add comments to the recipe.
 
 ## Rubric / Grading Scale
 
