@@ -109,3 +109,6 @@ venv.bak/
 *.toml
 .repl
 .replit
+
+# Student Custom
+*.drawio

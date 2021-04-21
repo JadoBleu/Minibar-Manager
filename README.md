@@ -5,7 +5,9 @@
 
 ## Student Info
 
-Add your Name, CRN, and Semester Year here using unordered bullets in Markdown.
+* Jefferson Wang
+* CRN 37902
+* Spring 2021
 
 ## Directions
 
@@ -15,15 +17,18 @@ As your project is unique, you will be required to help craft your grading scale
 
 ## Program Description
 
-Please enter the description of your individual program here.
+### Minibar Manager
+This program is a helper program that retains an inventory of liquors and other additions available. It will have a database of drink recipes that it will search through based on your available drinks and display possible recipes. The recipes will have a section that allows the user to favorite and add comments to the recipe.
+
+* The data should be stored in a AWS database to be connected to the program, thus fulfilling the project requirement for the CIT 172 project as well. 
 
 ## Rubric / Grading Scale
 
 * Working program per the above program description
-  * Sub Grading Description 1 (X pt)
-  * Sub Grading Description 2 (X pt)
-  * Sub Grading Description 3 (X pt)
-  * Sub Grading Description 4 (X pt)
+  * Have suitable objects for the execution of the program (50 pt)
+  * Have a linked AWS database to store recipes (50 pt)
+  * Be able to search through existing recipes based on available ingredients (50 pt)
+  * Have diagrams to explain the program (50 pt)
   * Sub Grading Description 5 (X pt)
 
 Total Points: 200
