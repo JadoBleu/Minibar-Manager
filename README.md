@@ -22,13 +22,16 @@ This program is a helper program that retains an inventory of liquors and other 
 
 * The data should be stored in a AWS database to be connected to the program, thus fulfilling the project requirement for the CIT 172 project as well. 
 
+The recipes are compiled manually through a reference sheet obtained through the course: 'The business of bartending' by Kellie Nicholson.
+The inventory list was pulled and cleaned from the site https://www.webtender.com/cgi-bin/imbselect
+
 ## Rubric / Grading Scale
 
 * Working program per the above program description
   * Have suitable objects for the execution of the program (50 pt)
   * Have a linked AWS database to store recipes (50 pt)
   * Be able to search through existing recipes based on available ingredients (50 pt)
-  * Have diagrams to explain the program (50 pt)
+  * Have diagrams to explain the program (20 pt)
   * Sub Grading Description 5 (X pt)
 
 Total Points: 200

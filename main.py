@@ -23,6 +23,23 @@ try:
         user=config["user"],
         password=config["password"],
     ) as connection:
-        print(connection)
+        # query to select and display all rows from recipe table for testing
+        sqlQuery = "select * from minibarmanager.recipe"
+        cursor = connection.cursor()
+        cursor.execute(sqlQuery)
+        records = cursor.fetchall()
+        for row in records:
+            print("recipeID: ", row[0],"\nrecipeName: ", row[1],"\ninstructions: ", row[2],
+                "\ngarnish: ", row[3], "\nlike: ", row[4], "\ncomments: ", row[5],"\n\n")
+
 except Error as e:
-    print(e)
+    print("error reading data from MySQL", e)
+
+finally:
+    # close the connection
+    if connection.is_connected():
+        connection.close()
+        cursor.close()
+        print("MySQL connection is closed")
+
+
