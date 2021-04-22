@@ -14,19 +14,15 @@ config = dotenv_values(".env")
 import pymysql
 
 # make the connection with the database
-con = pymysql.connect(config['host'], config['user'], config['password'], config['database'])
+from getpass import getpass
+from mysql.connector import connect, Error
 
 try:
-
-    with con.cursor() as cur:
-
-        cur.execute('SELECT VERSION()')
-
-        version = cur.fetchone()
-
-        print(f'Database version: {version[0]}')
-
-finally:
-
-    con.close()
-
+    with connect(
+        host=config["host"],
+        user=config["user"],
+        password=config["password"],
+    ) as connection:
+        print(connection)
+except Error as e:
+    print(e)
