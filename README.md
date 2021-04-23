@@ -30,9 +30,9 @@ The inventory list was pulled and cleaned from the site https://www.webtender.co
 * Working program per the above program description
   * Have suitable objects for the execution of the program (50 pt)
   * Have a linked AWS database to store recipes (50 pt)
-  * Be able to search through existing recipes based on available ingredients (50 pt)
-  * Have diagrams to explain the program (20 pt)
-  * Sub Grading Description 5 (X pt)
+  * Be able to search through existing recipes based on available ingredients (40 pt)
+  * Have appropriate diagrams to explain the program (30 pt)
+  * Have a user friendly interface to navigate the program (30 pt)
 
 Total Points: 200
 
