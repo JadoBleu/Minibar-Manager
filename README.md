@@ -25,6 +25,11 @@ This program is a helper program that retains an inventory of liquors and other 
 The recipes are compiled manually through a reference sheet obtained through the course: 'The business of bartending' by Kellie Nicholson.
 The inventory list was pulled and cleaned from the site https://www.webtender.com/cgi-bin/imbselect
 
+#### Ideas to be implemented at a future date:
+* multiple user access with their own data 
+* purchase recommendations that opens up the most new/favorite/all recipes 
+
+
 ## Rubric / Grading Scale
 
 * Working program per the above program description
