@@ -28,6 +28,8 @@ The inventory list was pulled and cleaned from the site https://www.webtender.co
 #### Ideas to be implemented at a future date:
 * multiple user access with their own data 
 * purchase recommendations that opens up the most new/favorite/all recipes 
+* installation package for pc users
+* mobile deployment
 
 
 ## Rubric / Grading Scale
