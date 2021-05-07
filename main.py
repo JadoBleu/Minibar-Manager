@@ -39,12 +39,11 @@ def create_db_connection():
 
 def query(query):
     '''
-    Perform an execute query using the global connection.
+    Perform an execute query using connection.
     
     Args:
         query(str): the query to be made to the database in SQL
     '''
-    global connection
     with connection.cursor() as cursor:
         try:
             cursor.execute(query)
@@ -55,7 +54,7 @@ def query(query):
 
 def read_query(query):
     '''
-    Perform a read query using the global connection.
+    Perform a read query using connection.
     
     Args:
         query(str): the query to be made to the database in SQL.
@@ -63,7 +62,6 @@ def read_query(query):
     Returns:
         A list of dictionaries where each dictionary corresponds to a record returned from the query.
     '''
-    global connection
     result = None
     with connection.cursor() as cursor:
         try:
@@ -92,17 +90,26 @@ class Ingredient:
         self.id = inventoryID
         self.name = ingredientName
         self.available = bool(available)
-        self.recipe_found = []
+        self.recipes_found = []
 
-    def set_in_stock(self):
+    def set_in_stock(self, recipe_list):
+        '''
+        Sets ingredint in stock.
+
+        Marks corresponding recipes that use said ingredient as available.
+
+        Checks said recipes if all ingredients are available and marks it.
+
+        Args:
+            recipe_list: the dictionary of objects of class Recipe.
+        '''
         # check if changes need to be made
-        global recipe_list
         if self.available == True:
             return
         else:
             self.available = True
             # mark ingredients as available
-            for n in self.recipe_found:
+            for n in self.recipes_found:
                 recipe_list[n].ingredients_needed[self.id][2] = True
                 # check if all ingredients are available
                 for key in recipe_list[n].ingredients_needed:
@@ -122,10 +129,17 @@ class Ingredient:
         else:
             self.available = False
             # mark ingredients as unavailable
-            for n in self.recipe_found:
+            for n in self.recipes_found:
                 recipe_list[n].ingredients_needed[self.id][2] = False
                 recipe_list[n].available = False
 
+    def add_recipe_location(self, recipeID):
+        '''
+        Appends the recipeID to the list of where the ingredient is found
+        Args:
+            recipeID(int): the recipeID where the ingredient is found
+        '''
+        self.recipes_found.append(recipeID)
 
 class Recipe:
     '''
@@ -135,6 +149,7 @@ class Recipe:
         set_like: set the self.like attribute to True
         set_dislike: set the self.like attribute to False
         update_comment(str): replaces the self.comment with the inputted string
+        add_ingredient(list): appends an ingredient to self.ingredients_needed
     '''
     def __init__(self, id, name, instructions, garnish, like, comments):
         '''
@@ -153,7 +168,7 @@ class Recipe:
         self.like = bool(like)
         self.comments = comments
         self.available = False
-        self.ingredients_needed = []
+        self.ingredients_needed = {}
         
     def set_like(self):
         self.like = True
@@ -167,94 +182,84 @@ class Recipe:
     def set_available(self):
         self.available = True
 
+    def add_ingredient(self, ingredient):
+        '''
+        Appends the ingredient to the list of ingredients needed
+        Args:
+            ingredient(list): [ingredientID, amount, unit, available]}
+
+        '''
+        if len(self.ingredients_needed) == 0:
+            self.ingredients_needed = {ingredient[0]:[ingredient[1], ingredient[2], ingredient[3]]}
+        else:
+            self.ingredients_needed[ingredient[0]] = [ingredient[1], ingredient[2], ingredient[3]]
         
+
 def get_ingredient_list():
     '''
-    Queries the database for the list of ingredients.
-
-    Updates the global list ingredient_id_list with valid inventoryIDs.
-
-    Args:
-        None
+    Queries the database for the list of ingredients
     
     Returns:
         a dictionary of objects of class Ingredient
     '''
-    global ingredient_id_list
     ingredient_list = {}
-    ing_id = []
     sql_query = "SELECT * FROM minibarmanager.inventory"
     records = read_query(sql_query)
     for n in records:
         ingredient_list[n[0]] = Ingredient(n[0], n[1], n[2])
-        ing_id.append(n[0]) 
-    
-    ingredient_id_list = ing_id
     return ingredient_list
 
 
 def get_recipe_list():
     '''
     Queries the database for the list of recipes.
-
-    Updates the global list recipe_id_list with valid recipeIDs.
-
-    Args:
-        None
     
     Returns:
         a dictionary of objects of class Recipe
     '''
-    global recipe_id_list
     recipe_list = {}
-    rec_id = []
     sql_query = "SELECT * FROM minibarmanager.recipe"
     records = read_query(sql_query)
     for n in records:
         recipe_list[n[0]] = Recipe(n[0], n[1], n[2], n[3], n[4], n[5])
-        rec_id.append(n[0]) 
-    
-    recipe_id_list = rec_id
     return recipe_list
 
 
 def get_ingredients_needed(recipe_list, ingredient_list):
     '''
     Queries the database for the list of ingredients needed per recipe. 
-    
-    Updates each Recipe object with a dictionary of keys(ingredientIDs):values(the amount, unit, and availablility).
-
+    Calls Recipe.add_ingredient() for each result.
     Queries the databse for the list of recipes found per ingredient.
-
-    Updates each Ingredient object with a list of the recipeIDs that object found in.
+    Updates each Ingredient object with a list of the recipeIDs that uses the Ingredient.
 
     Args:
         recipe_list(dict): the dictionary holding the id and location of valid objects: Recipe
-        ingredient_lust(dict): the dictionary holding the id and location of valid objects: Ingredient
+        ingredient_list(dict): the dictionary holding the id and location of valid objects: Ingredient
+    
+    Return:
+
     '''
     
     sql_query = "SELECT recipeID, inventoryID, amount, unit  FROM minibarmanager.ingredientList ORDER BY recipeID;"
     result = read_query(sql_query)
-    n = 0
-   
-    while n < len(result):
-        if result[n][0] != result[n-1][0]:
-            # if the recipeID is different from the previous result, create a new dictionary key
-            recipe_list[result[n][0]].ingredients_needed = {result[n][1]: [result[n][2], result[n][3], False]}
-        else:
-            # if the recipeID is the same as the previouos result, append the dictionary value(list) with another tuple.
-            recipe_list[result[n][0]].ingredients_needed[result[n][1]]= [result[n][2], result[n][3], False]
-        n += 1
     
+    # get available ingredients so as to not overwrite existing availbility
+    available_list = get_available_ingredients(ingredient_list, True)
+    for n in result:
+        # ingredient = [ingredientID, amount, unit, available]
+        available = False
+        for m in available_list:
+            if n == m:
+                available = True
+        ingredient = [n[1], n[2], n[3], available]
+        recipe_list[n[0]].add_ingredient(ingredient)
+    
+
     inventory_query = "SELECT inventoryID, recipeID  FROM minibarmanager.ingredientList ORDER BY inventoryID;"
-    result_by_inv = read_query(inventory_query)
-    n = 0
-    while n < len(result):
-        if result_by_inv[n][0] != result_by_inv[n-1][0]:
-            ingredient_list[result_by_inv[n][0]].recipe_found = [result_by_inv[n][1]]
-        else:
-            ingredient_list[result_by_inv[n][0]].recipe_found.append(result_by_inv[n][1])
-        n += 1
+    result_by_ing = read_query(inventory_query)
+
+    for n in result_by_ing:
+        ingredient_list[n[0]].add_recipe_location(n[1])
     
 
 def search_name(text="", what= ""):
@@ -271,7 +276,7 @@ def search_name(text="", what= ""):
         A list of the corresponding IDs that match the result.
 
     Raises:
-        ArgumentError: when the parameter for 'what' does not match the required strings.
+        ArgumentError: Raised when the parameter for 'what' does not match the required strings.
     '''
     class ArgumentError(Exception):
         pass
@@ -293,7 +298,7 @@ def search_name(text="", what= ""):
 
 def get_favorite_recipes(recipe_list, like = True):
     '''
-    returns an index of recipes where like is True or False
+    returns a list of indices of recipes where like is True or False
 
     Args:
         recipe_list: a list of objects containing all recipes
@@ -302,18 +307,17 @@ def get_favorite_recipes(recipe_list, like = True):
     Returns: 
         A list of ID values for resulting recipes
     '''
-    global recipe_id_list
-    rec_id = recipe_id_list
     result = []
-    for n in rec_id:
+    for n in recipe_list:
         if recipe_list[n].like == like:
             result.append(recipe_list[n].id)
+    print(result)
     return result
 
 
 def get_available_ingredients(ingredient_list, available = True):
     '''
-    returns an index of ingredients where available = True/False
+    returns a list of indices of ingredients where available = True/False
 
     Args:
         ingredient_list: a list of objects containing all ingredients
@@ -321,58 +325,62 @@ def get_available_ingredients(ingredient_list, available = True):
     Returns: 
         A list of ID values for resulting ingredients
     '''
-    global ingredient_id_list
-    ing_id = ingredient_id_list
     result = []
-    for n in ing_id:
+    for n in ingredient_list:
         if ingredient_list[n].available == available:
             result.append(ingredient_list[n].id)
 
     return result
 
 
-#def get_available_recipes(ingredient_list, recipe_list, ingredients_needed):
+def get_available_recipes(recipe_list):
     '''
     searches through all recipes to find all recipes that can be made with ingredients in stock
 
+    Args:
+        recipe_list: a dictionary of objects of class Recipe.
+
+    Return:
+        a list of values corresponding to the index of recipes where self.avaialabe == True
     '''
-    #for n in recipe_list:
+    result = []
+    for n in recipe_list:
+       if recipe_list[n].available == True:
+            result.append(n)
+    return result
 
 
 def test_prints():
-    # for n in recipe_list:    
+    #for n in recipe_list:    
     #    print(recipe_list[n].name, recipe_list[n].ingredients_needed)
     
     # for n in ingredient_list:    
-    #    print(ingredient_list[n].name, ingredient_list[n].recipe_found)
+    #    print(ingredient_list[n].name, ingredient_list[n].recipes_found)
 
     # search for recipes containing 'bomb'
     # results = search_name("bomb", "recipe")
     # for n in results:
-    #     print(recipe_list[n].name)
+    #    print(recipe_list[n].name)
     
     # search for ingredients containing 'rum'
     # results = search_name("rum", "ingredient")
     
     # for n in results:
-    #     print(ingredient_list[n].name)
+    #    print(ingredient_list[n].name)
     
     # favorites = get_favorite_recipes(recipe_list)
-    # print(favorites)
+    # print(favorites.name)
     
     # available = get_available_ingredients(ingredient_list)
     # print(available)
     
     # Test to see if the recipe search for available recipes based on inventory is working  
     for n in (183,608,611,554,391,234,606):
-        ingredient_list[n].set_in_stock()
+        ingredient_list[n].set_in_stock(recipe_list)
+    available = get_available_recipes(recipe_list)
+    for key in available:
+        print(recipe_list[key].name)
 
-    for n in recipe_id_list:
-        
-        if recipe_list[n].available == True:
-            print(recipe_list[n].name)
-
-    
 
     return
 
@@ -381,18 +389,14 @@ if __name__=="__main__":
     # create the connection 
     connection = create_db_connection()
     
-    # retrieve the inventory list and populate a dictionary called ingredient_list 
-    ingredient_id_list = [] # initialize the index of ingredients to be updated in get_ingredient_list()
+    # query the connected database for data
     ingredient_list = get_ingredient_list() 
-    
-    # retrieve the recipe list and populate a dictionary called recipe_list 
-    recipe_id_list = [] # initialize the index of recipes to be updated in get_recipe_list()
     recipe_list = get_recipe_list()
     
     # retrieve the list of ingredients needed for each recipe
     get_ingredients_needed(recipe_list, ingredient_list)
 
-
+    # do any test prints to verify functions
     test_prints()
 
 
