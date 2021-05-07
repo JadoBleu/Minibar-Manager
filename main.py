@@ -35,22 +35,7 @@ def create_db_connection():
     except Error as e:
         print("error reading data from MySQL:", e)
     return connection
-
-
-def query(query):
-    '''
-    Perform an execute query using connection.
-    
-    Args:
-        query(str): the query to be made to the database in SQL
-    '''
-    with connection.cursor() as cursor:
-        try:
-            cursor.execute(query)
-            connection.commit()
-        except Error as e:
-            print("error executing query:", e)
-    
+   
 
 def read_query(query):
     '''
@@ -140,6 +125,7 @@ class Ingredient:
             recipeID(int): the recipeID where the ingredient is found
         '''
         self.recipes_found.append(recipeID)
+
 
 class Recipe:
     '''
