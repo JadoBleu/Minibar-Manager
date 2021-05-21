@@ -13,53 +13,12 @@ import fnmatch
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.core.window import Window
+from kivymd.uix.list import IRightBodyTouch, TwoLineAvatarIconListItem, IconRightWidget
+from kivymd.uix.selectioncontrol import MDCheckbox
+from kivy.properties import StringProperty
 
 
-def create_db_connection():
-    """
-    Make the connection using the credentials found in the .env file.
-
-    Return:
-        Returns the connection.
-
-    Exception:
-        Error: the connection has not been made
-    """
-    # config: a dictionary containing the host, user, password, and database}
-    config = dotenv_values(".env")
-    connection = None
-    try:
-        connection = connect(
-            # make the connection with the database
-            host=config["host"],
-            user=config["user"],
-            password=config["password"],
-            database=config["database"],
-        )
-    except Error as e:
-        print("error reading data from MySQL:", e)
-    return connection
-
-
-def read_query(connection, query):
-    """
-    Perform a read query using connection.
-
-    Args:
-        connection: the connection data made in create_db_connection()
-        query(str): the query to be made to the database in SQL.
-
-    Returns:
-        A list of dictionaries where each dictionary corresponds to a record returned from the query.
-    """
-    result = None
-    with connection.cursor() as cursor:
-        try:
-            cursor.execute(query)
-            result = cursor.fetchall()
-            return result
-        except Error as e:
-            print("error reading data from query:", e)
+data = {}
 
 
 class Ingredient:
@@ -121,23 +80,20 @@ class Ingredient:
             self.available = False
             # mark ingredients as unavailable
             for n in self.recipes_found:
-                recipe_list[n].ingredients_needed[self.id][2] = False
-                recipe_list[n].available = False
+                data["recipe_list"][n].ingredients_needed[self.id][2] = False
+                data["recipe_list"][n].available = False
 
-    def toggle_available(self, recipe_list):
-        self.recipe_list = recipe_list
+    def toggle_available(self):
         if self.available == True:
             self.set_no_stock()
-            print("off")
         else:
-            self.set_in_stock(recipe_list)
-            print("on")
+            self.set_in_stock(data["recipe_list"])
 
     def add_recipe_location(self, recipeID):
         """
-        Appends the recipeID to the list of where the ingredient is found
+        Appends the recipeID to the list of where the ingredient is used
         Args:
-            recipeID(int): the recipeID where the ingredient is found
+            recipeID(int): the recipeID where the ingredient is used
         """
         self.recipes_found.append(recipeID)
 
@@ -204,72 +160,6 @@ class Recipe:
             ]
 
 
-def get_ingredient_list(connection):
-    """
-    Queries the database for the list of ingredients
-
-    Returns:
-        a dictionary of objects of class Ingredient
-    """
-    ingredient_list = {}
-    sql_query = "SELECT * FROM minibarmanager.inventory"
-    records = read_query(connection, sql_query)
-    for n in records:
-        ingredient_list[n[0]] = Ingredient(n[0], n[1], n[2])
-    return ingredient_list
-
-
-def get_recipe_list(connection):
-    """
-    Queries the database for the list of recipes.
-
-    Returns:
-        a dictionary of objects of class Recipe
-    """
-    recipe_list = {}
-    sql_query = "SELECT * FROM minibarmanager.recipe"
-    records = read_query(connection, sql_query)
-    for n in records:
-        recipe_list[n[0]] = Recipe(n[0], n[1], n[2], n[3], n[4], n[5])
-    return recipe_list
-
-
-def get_ingredients_needed(recipe_list, ingredient_list, connection):
-    """
-    Queries the database for the list of ingredients needed per recipe.
-    Calls Recipe.add_ingredient() for each result.
-    Queries the databse for the list of recipes found per ingredient.
-    Updates each Ingredient object with a list of the recipeIDs that uses the Ingredient.
-
-    Args:
-        recipe_list(dict): the dictionary holding the id and location of valid objects: Recipe
-        ingredient_list(dict): the dictionary holding the id and location of valid objects: Ingredient
-
-    Return:
-
-    """
-
-    sql_query = "SELECT recipeID, inventoryID, amount, unit  FROM minibarmanager.ingredientList ORDER BY recipeID;"
-    result = read_query(connection, sql_query)
-
-    # get available ingredients so as to not overwrite existing availbility
-    available_list = get_available_ingredients(ingredient_list, True)
-    for n in result:
-        # ingredient = [ingredientID, amount, unit, available]
-        available = False
-        for m in available_list:
-            if n == m:
-                available = True
-        ingredient = [n[1], n[2], n[3], available]
-        recipe_list[n[0]].add_ingredient(ingredient)
-
-    inventory_query = "SELECT inventoryID, recipeID  FROM minibarmanager.ingredientList ORDER BY inventoryID;"
-    result_by_ing = read_query(connection, inventory_query)
-
-    for n in result_by_ing:
-        ingredient_list[n[0]].add_recipe_location(n[1])
-
-
 def search_name(where, text=""):
     """
     Searches the list for any objects where the name contains text.
@@ -294,65 +184,7 @@ def search_name(where, text=""):
     return result
 
 
-def get_favorite_recipes(recipe_list, like=True):
-    """
-    returns a list of indices of recipes where like is True or False
-
-    Args:
-        recipe_list: a list of objects containing all recipes
-        like(bool): select whether to return liked or not liked recipes
-
-    Returns:
-        A list of ID values for resulting recipes
-    """
-    result = []
-    for n in recipe_list:
-        if recipe_list[n].like == like:
-            result.append(recipe_list[n].id)
-    print(result)
-    return result
-
-
-def get_available_ingredients(ingredient_list, available=True):
-    """
-    returns a list of indices of ingredients where available = True/False
-
-    Args:
-        ingredient_list: a list of objects containing all ingredients
-        available(bool): Select whether to return in stock or out of stock ingredients
-    Returns:
-        A list of ID values for resulting ingredients
-    """
-    result = []
-    for n in ingredient_list:
-        if ingredient_list[n].available == available:
-            result.append(ingredient_list[n].id)
-
-    return result
-
-
-def get_available_recipes(recipe_list):
-    """
-    searches through all recipes to find all recipes that can be made with ingredients in stock
-
-    Args:
-        recipe_list: a dictionary of objects of class Recipe.
-
-    Return:
-        a list of values corresponding to the index of recipes where self.avaialabe == True
-    """
-    result = []
-    for n in recipe_list:
-        if recipe_list[n].available == True:
-            result.append(n)
-    return result
-
-
-def test_prints(ingredient_list, recipe_list):
-    """
-    sample strings for manual tests
-    """
-
+"""
     # for n in recipe_list:
     #    print(recipe_list[n].name, recipe_list[n].ingredients_needed)
 
@@ -376,7 +208,6 @@ def test_prints(ingredient_list, recipe_list):
     # print(available)
 
     # Test to see if the recipe search for available recipes based on inventory is working
-    """
     for n in (
         103,
         129,
@@ -400,55 +231,240 @@ def test_prints(ingredient_list, recipe_list):
     available = get_available_recipes(recipe_list)
     for key in available:
         print(recipe_list[key].name)
-    """
-    return
 
-
-# Declare screens
+"""
 
 
 class StartScreen(Screen):
     def setup(self):
         # declare globals
-        global connection
-        global ingredient_list
-        global recipe_list
+        global data
         # create the connection
-        connection = create_db_connection()
-
+        connection = self.create_db_connection()
+        data = {}
         # query the connected database for data
-        ingredient_list = get_ingredient_list(connection)
-        recipe_list = get_recipe_list(connection)
+        data["ingredient_list"] = self.get_ingredient_list(connection)
+        data["recipe_list"] = self.get_recipe_list(connection)
 
         # retrieve the list of ingredients needed for each recipe
-        get_ingredients_needed(recipe_list, ingredient_list, connection)
+        self.get_ingredients_needed(data, connection)
 
         # close the connection
         if connection.is_connected():
             connection.close()
-
         # do any test prints to verify functions
-        test_prints(ingredient_list, recipe_list)
+        # test_prints(data["ingredient_list"], data["recipe_list"])
+
+    def create_db_connection(self):
+        """
+        Make the connection using the credentials found in the .env file.
+
+        Return:
+            Returns the connection.
+
+        Exception:
+            Error: the connection has not been made
+        """
+        # config: a dictionary containing the host, user, password, and database}
+        config = dotenv_values(".env")
+        connection = None
+        try:
+            connection = connect(
+                # make the connection with the database
+                host=config["host"],
+                user=config["user"],
+                password=config["password"],
+                database=config["database"],
+            )
+        except Error as e:
+            print("error reading data from MySQL:", e)
+        return connection
+
+    def read_query(self, connection, query):
+        """
+        Perform a read query using connection.
+
+        Args:
+            connection: the connection data made in create_db_connection()
+            query(str): the query to be made to the database in SQL.
+
+        Returns:
+            A list of dictionaries where each dictionary corresponds to a record returned from the query.
+        """
+        result = None
+        with connection.cursor() as cursor:
+            try:
+                cursor.execute(query)
+                result = cursor.fetchall()
+                return result
+            except Error as e:
+                print("error reading data from query:", e)
+
+    def get_recipe_list(self, connection):
+        """
+        Queries the database for the list of recipes.
+
+        Returns:
+            a dictionary of objects of class Recipe
+        """
+        recipe_list = {}
+        sql_query = "SELECT * FROM minibarmanager.recipe"
+        records = self.read_query(connection, sql_query)
+        for n in records:
+            recipe_list[n[0]] = Recipe(n[0], n[1], n[2], n[3], n[4], n[5])
+        return recipe_list
+
+    def get_ingredient_list(self, connection):
+        """
+        Queries the database for the list of ingredients
+
+        Returns:
+            a dictionary of objects of class Ingredient
+        """
+        ingredient_list = {}
+        sql_query = "SELECT * FROM minibarmanager.inventory"
+        records = self.read_query(connection, sql_query)
+        for n in records:
+            ingredient_list[n[0]] = Ingredient(n[0], n[1], n[2])
+        return ingredient_list
+
+    def get_ingredients_needed(self, data, connection):
+        """
+        Queries the database for the list of ingredients needed per recipe.
+        Calls Recipe.add_ingredient() for each result.
+        Queries the databse for the list of recipes found per ingredient.
+        Updates each Ingredient object with a list of the recipeIDs that uses the Ingredient.
+
+        Args:
+            data: the dictionary holding the following lists:
+                recipe_list(dict): the dictionary holding the id and location of objects Recipe
+                ingredients_list(dict): the dictionary holding the id and location of objects Ingredient
+
+        Return:
+
+        """
+
+        sql_query = "SELECT recipeID, inventoryID, amount, unit  FROM minibarmanager.ingredientList ORDER BY recipeID;"
+        result = self.read_query(connection, sql_query)
+
+        for n in result:
+            # ingredient = [ingredientID, amount, unit, available]
+            available = False
+
+            ingredient = [n[1], n[2], n[3], available]
+            data["recipe_list"][n[0]].add_ingredient(ingredient)
+
+        inventory_query = "SELECT inventoryID, recipeID  FROM minibarmanager.ingredientList ORDER BY inventoryID;"
+        result_by_ing = self.read_query(connection, inventory_query)
+
+        for n in result_by_ing:
+            data["ingredient_list"][n[0]].add_recipe_location(n[1])
 
 
-class MenuScreen(Screen):
+class MainMenu(Screen):
     pass
 
 
-class RecipeScreen(Screen):
-    pass
+class RecipeList(Screen):
+    global data
+
+    def get_available_recipes(self):
+        """
+        searches through all recipes to find all recipes that can be made with ingredients in stock
+
+        Return:
+            a list of values corresponding to the index of recipes where self.available == True
+        """
+        result = []
+        for n in data["recipe_list"]:
+            if data["recipe_list"][n].available == True:
+                result.append(n)
+        return result
+
+    def get_favorite_recipes(self, recipe_list, like=True):
+        """
+        returns a list of indices of recipes where like is True or False
+
+        Args:
+            recipe_list: a list of objects containing all recipes
+            like(bool): select whether to return liked or not liked recipes
+
+        Returns:
+            A list of ID values for resulting recipes
+        """
+        result = []
+        for n in recipe_list:
+            if recipe_list[n].like == like:
+                result.append(recipe_list[n].id)
+        print(result)
+        return result
+
+    def get_r_list(self):
+        for i in data["recipe_list"]:
+            self.ids.r_scroll.add_widget(
+                TwoLineAvatarIconListItem(
+                    text=data["recipe_list"][i].name,
+                    secondary_text=str(i),
+                    secondary_theme_text_color="Custom",
+                    secondary_text_color=(0.188, 0.188, 0.188),
+                    on_press=lambda x, item=i: self.show_recipe(item),
+                )
+            )
+
+    def show_recipe(self, id):
+        self.manager.transition.direction = "left"
+        self.manager.get_screen("r_disp").recipe_id = id
+        self.manager.current = "r_disp"
 
 
-class RecipeFilter(Screen):
-    pass
+class IngredientList(Screen):
+    class ListItemWithCheckbox(TwoLineAvatarIconListItem):
+        """Custom list item."""
+
+    class RightCheckbox(IRightBodyTouch, MDCheckbox):
+        """Custom right container."""
+
+        def toggle_check(self, id):
+            id = int(id)
+            data["ingredient_list"][id].toggle_available()
+
+    def get_i_list(self):
+        global data
+        for i in data["ingredient_list"]:
+            self.ids.i_scroll.add_widget(
+                self.ListItemWithCheckbox(
+                    text=data["ingredient_list"][i].name,
+                    secondary_text=str(i),
+                    secondary_theme_text_color="Custom",
+                    secondary_text_color=(0.188, 0.188, 0.188),
+                )
+            )
+
+    def get_available_ingredients(self, ingredient_list, available=True):
+        """
+        returns a list of indices of ingredients where available = True/False
+
+        Args:
+            ingredient_list: a list of objects containing all ingredients
+            available(bool): Select whether to return in stock or out of stock ingredients
+        Returns:
+            A list of ID values for resulting ingredients
+        """
+        result = []
+        for n in ingredient_list:
+            if ingredient_list[n].available == available:
+                result.append(ingredient_list[n].id)
+
+        return result
 
 
-class InventoryScreen(Screen):
-    pass
+class RecipeDisplay(Screen):
+    recipe_id = 0
+    recipe_name = StringProperty("Temp Name")
 
-
-class InventoryFilter(Screen):
-    pass
+    def get_data(self):
+        self.recipe_name = data["recipe_list"][self.recipe_id].name
+        print(data["recipe_list"][self.recipe_id].ingredients_needed)
 
 
 # main ui app
@@ -457,11 +473,10 @@ class MinibarManagerApp(MDApp):
 
     def build(self):
         self.sm.add_widget(StartScreen(name="start"))
-        self.sm.add_widget(MenuScreen(name="menu"))
-        self.sm.add_widget(RecipeScreen(name="recipe"))
-        self.sm.add_widget(RecipeFilter(name="rfilter"))
-        self.sm.add_widget(InventoryScreen(name="inventory"))
-        self.sm.add_widget(InventoryFilter(name="ifilter"))
+        self.sm.add_widget(MainMenu(name="m_menu"))
+        self.sm.add_widget(RecipeList(name="r_list"))
+        self.sm.add_widget(IngredientList(name="i_list"))
+        self.sm.add_widget(RecipeDisplay(name="r_disp"))
 
         self.theme_cls.theme_style = "Dark"
 
@@ -469,7 +484,4 @@ class MinibarManagerApp(MDApp):
 
 
 if __name__ == "__main__":
-    connection = ""
-    recipe_list = {}
-    ingredient_list = {}
     MinibarManagerApp().run()

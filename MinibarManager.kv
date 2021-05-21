@@ -1,3 +1,10 @@
+<ListItemWithCheckbox>:
+    RightCheckbox:
+        on_state:self.toggle_check(root.secondary_text)
+
+<MDCheckbox>:
+    selected_color: (.86,.24,.24)
+    
 <StartScreen>:
     name: 'start'
     BoxLayout:
@@ -14,10 +21,10 @@
         on_release: 
             root.setup()
             root.manager.transition.direction = 'left'
-            root.manager.current = 'menu'
+            root.manager.current = 'm_menu'
 
-<MenuScreen>:
-    name: 'menu'
+<MainMenu>:
+    name: 'm_menu'
     MDFillRoundFlatButton:
         text: 'Recipes'
         font_size: "22sp"
@@ -25,7 +32,7 @@
         pos_hint: {'center_x':0.5,'center_y':0.75}
         on_release: 
             root.manager.transition.direction = 'left'
-            root.manager.current = 'recipe'
+            root.manager.current = 'r_list'
     MDFillRoundFlatButton:
         text: 'Inventory'
         font_size: "22sp"
@@ -33,7 +40,7 @@
         pos_hint: {'center_x':0.5,'center_y':0.35}
         on_release: 
             root.manager.transition.direction = 'left'
-            root.manager.current = 'inventory'
+            root.manager.current = 'i_list'
     MDFillRoundFlatIconButton:
         text: 'Exit'
         size_hint: (0.9, .075)
@@ -43,98 +50,15 @@
         on_release: exit()
 
 
-<RecipeScreen>:
-    name: 'recipe'
 
+<RecipeList>:
+    name: 'r_list'
+    on_enter: self.get_r_list()
     BoxLayout:
-        spacing: 10
-        orientation: 'vertical'
-
-        BoxLayout:
-            spacing: 10
-            orientation: 'horizontal'
-            size_hint: (1, .1)
-            valign: "top"
-            MDLabel:
-                text: "Recipes"
-                halign: "center"
-                theme_text_color: "Primary"
-                size_hint: (1, .8)
-
-            MDIconButton:
-                size_hint: (.2, 1)
-                icon: "menu-open"
-                on_release:
-                    root.manager.transition.direction = 'left'
-                    root.manager.current = 'rfilter'
-        MDLabel:
-            text: "temp"
-
-    MDFillRoundFlatIconButton:
-        text: 'Back'
-        size_hint: (0.9, .075)
-        pos_hint: {"center_x":.5, "center_y":.05}
-        icon: "keyboard-backspace"
-        halign: "center"
-        on_release: 
-            root.manager.transition.direction = 'right'
-            root.manager.current = 'menu'
-    
-
-<RecipeFilter>:
-    name:'rfilter'
-    MDLabel:
-        text: 'filter'
-    MDFillRoundFlatButton:
-        text: 'Done'
-        size_hint: (0.9, .075)
-        pos_hint: {"center_x":.5, "center_y":.05}
-        halign: "center"
-        on_release: 
-            root.manager.transition.direction = 'right'
-            root.manager.current = 'recipe'
-
-
-<InventoryScreen>:       
-    name: 'inventory'
-    BoxLayout:
-        spacing: 10
-        orientation: 'vertical'
-
-        BoxLayout:
-            spacing: 10
-            orientation: 'horizontal'
-            size_hint: (1, .1)
-            valign: "top"
-            MDLabel:
-                text: "Ingredients"
-                halign: "center"
-                theme_text_color: "Primary"
-
-    MDFillRoundFlatButton:
-        text: 'Search'
-        font_size: "18sp"
-        size_hint: .6, .1
-        pos_hint: {'center_x':0.5,'center_y':0.7}
-        on_release: 
-            root.manager.transition.direction = 'left'
-            root.manager.current = 'recipe'
-    MDFillRoundFlatButton:
-        text: 'View Available'
-        font_size: "18sp"
-        size_hint: .6, .1
-        pos_hint: {'center_x':0.5,'center_y':0.5}
-        on_release: 
-            root.manager.transition.direction = 'left'
-            root.manager.current = 'inventory'
-    MDFillRoundFlatButton:
-        text: 'View All'        
-        font_size: "18sp"
-        size_hint: .6, .1
-        pos_hint: {"center_x":0.5, "center_y":.3}
-        halign: "center"
-        on_release: exit()
-
+        size_hint: .9, .9
+        ScrollView:
+            MDList:
+                id: r_scroll
     MDFillRoundFlatIconButton:
         text: 'Back'
         size_hint: (0.9, .075)
@@ -143,18 +67,44 @@
         halign: "center"
         on_release: 
             root.manager.transition.direction = 'right'
-            root.manager.current = 'menu'
-            
-<InventoryFilter>:
-    name:'ifilter'
-    MDLabel:
-        text: 'filter'
-    MDFillRoundFlatButton:
-        text: 'Done'
+            root.manager.current = 'm_menu'
+
+
+<IngredientList>:
+    name: 'i_list'
+    on_enter: self.get_i_list()
+    BoxLayout:
+        size_hint: .9, .9
+        ScrollView:
+            MDList:
+                id: i_scroll
+    MDFillRoundFlatIconButton:
+        text: 'Back'
         size_hint: (0.9, .075)
-        pos_hint: {"center_x":.5, "center_y":.05}
+        pos_hint: {"center_x":0.5, "center_y":.05}
+        icon: "keyboard-backspace"
         halign: "center"
         on_release: 
             root.manager.transition.direction = 'right'
-            root.manager.current = 'inventory'
+            root.manager.current = 'm_menu'
+
+
+<RecipeDisplay>:
+    name: 'r_disp'
+    on_enter: root.get_data()
+    MDLabel:
+        text: root.recipe_name
+        halign: "center"
+        font_style: "H3"
+        theme_text_color: "Primary"
+        size_hint: (1, .5)
+    MDFillRoundFlatIconButton:
+        text: 'Back'
+        size_hint: (0.9, .075)
+        pos_hint: {"center_x":0.5, "center_y":.05}
+        icon: "keyboard-backspace"
+        halign: "center"
+        on_release: 
+            root.manager.transition.direction = 'right'
+            root.manager.current = 'r_list'
 
