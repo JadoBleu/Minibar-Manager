@@ -114,3 +114,4 @@ venv.bak/
 *.drawio
 minibar-env/
 DatabaseBackup/
+tests/

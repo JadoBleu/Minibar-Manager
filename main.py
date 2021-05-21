@@ -10,6 +10,9 @@
 from dotenv import dotenv_values
 from mysql.connector import connect, Error
 import fnmatch
+from kivymd.app import MDApp
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.core.window import Window
 
 
 def create_db_connection():
@@ -43,6 +46,7 @@ def read_query(connection, query):
     Perform a read query using connection.
 
     Args:
+        connection: the connection data made in create_db_connection()
         query(str): the query to be made to the database in SQL.
 
     Returns:
@@ -119,6 +123,15 @@ class Ingredient:
             for n in self.recipes_found:
                 recipe_list[n].ingredients_needed[self.id][2] = False
                 recipe_list[n].available = False
+
+    def toggle_available(self, recipe_list):
+        self.recipe_list = recipe_list
+        if self.available == True:
+            self.set_no_stock()
+            print("off")
+        else:
+            self.set_in_stock(recipe_list)
+            print("on")
 
     def add_recipe_location(self, recipeID):
         """
@@ -335,7 +348,11 @@ def get_available_recipes(recipe_list):
     return result
 
 
-def test_prints(ingredient_list, recipe_list, connection):
+def test_prints(ingredient_list, recipe_list):
+    """
+    sample strings for manual tests
+    """
+
     # for n in recipe_list:
     #    print(recipe_list[n].name, recipe_list[n].ingredients_needed)
 
@@ -359,34 +376,100 @@ def test_prints(ingredient_list, recipe_list, connection):
     # print(available)
 
     # Test to see if the recipe search for available recipes based on inventory is working
-    # for n in (183, 608, 611, 554, 391, 234, 606):
-    #    ingredient_list[n].set_in_stock(recipe_list)
-    # available = get_available_recipes(recipe_list)
-    # for key in available:
-    #    print(recipe_list[key].name)
-
+    """
+    for n in (
+        103,
+        129,
+        210,
+        239,
+        217,
+        242,
+        275,
+        297,
+        340,
+        484,
+        535,
+        540,
+        554,
+        612,
+        613,
+        614,
+        615,
+    ):
+        ingredient_list[n].set_in_stock(recipe_list)
+    available = get_available_recipes(recipe_list)
+    for key in available:
+        print(recipe_list[key].name)
+    """
     return
 
 
-def main():
-    # create the connection
-    connection = create_db_connection()
+# Declare screens
 
-    # query the connected database for data
-    ingredient_list = get_ingredient_list(connection)
-    recipe_list = get_recipe_list(connection)
 
-    # retrieve the list of ingredients needed for each recipe
-    get_ingredients_needed(recipe_list, ingredient_list, connection)
+class StartScreen(Screen):
+    def setup(self):
+        # declare globals
+        global connection
+        global ingredient_list
+        global recipe_list
+        # create the connection
+        connection = create_db_connection()
 
-    # do any test prints to verify functions
-    test_prints(ingredient_list, recipe_list, connection)
+        # query the connected database for data
+        ingredient_list = get_ingredient_list(connection)
+        recipe_list = get_recipe_list(connection)
 
-    # close the connection
-    if connection.is_connected():
-        connection.close()
+        # retrieve the list of ingredients needed for each recipe
+        get_ingredients_needed(recipe_list, ingredient_list, connection)
+
+        # close the connection
+        if connection.is_connected():
+            connection.close()
+
+        # do any test prints to verify functions
+        test_prints(ingredient_list, recipe_list)
+
+
+class MenuScreen(Screen):
+    pass
+
+
+class RecipeScreen(Screen):
+    pass
+
+
+class RecipeFilter(Screen):
+    pass
+
+
+class InventoryScreen(Screen):
+    pass
+
+
+class InventoryFilter(Screen):
+    pass
+
+
+# main ui app
+class MinibarManagerApp(MDApp):
+    sm = ScreenManager()
+
+    def build(self):
+        self.sm.add_widget(StartScreen(name="start"))
+        self.sm.add_widget(MenuScreen(name="menu"))
+        self.sm.add_widget(RecipeScreen(name="recipe"))
+        self.sm.add_widget(RecipeFilter(name="rfilter"))
+        self.sm.add_widget(InventoryScreen(name="inventory"))
+        self.sm.add_widget(InventoryFilter(name="ifilter"))
+
+        self.theme_cls.theme_style = "Dark"
+
+        return self.sm
 
 
 if __name__ == "__main__":
-
-    main()
+    connection = ""
+    recipe_list = {}
+    ingredient_list = {}
+    MinibarManagerApp().run()
