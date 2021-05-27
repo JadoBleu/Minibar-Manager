@@ -17,7 +17,6 @@ from kivymd.uix.list import IRightBodyTouch, TwoLineAvatarIconListItem, IconRigh
 from kivymd.uix.selectioncontrol import MDCheckbox
 from kivy.properties import StringProperty
 
-
 data = {}
 
 
@@ -182,57 +181,6 @@ def search_name(where, text=""):
         if fnmatch.fnmatch(where[i].name, search):
             result.append(where[i].id)
     return result
-
-
-"""
-    # for n in recipe_list:
-    #    print(recipe_list[n].name, recipe_list[n].ingredients_needed)
-
-    # for n in ingredient_list:
-    #    print(ingredient_list[n].name, ingredient_list[n].recipes_found)
-
-    # search for recipes containing 'bomb'
-    # results = search_name(recipe_list, "bomb")
-    # for n in results:
-    #    print(recipe_list[n].name)
-
-    # search for ingredients containing 'rum'
-    # results = search_name(ingredient_list, "rum")
-    # for n in results:
-    #    print(ingredient_list[n].name)
-
-    # favorites = get_favorite_recipes(recipe_list)
-    # print(favorites.name)
-
-    # available = get_available_ingredients(ingredient_list)
-    # print(available)
-
-    # Test to see if the recipe search for available recipes based on inventory is working
-    for n in (
-        103,
-        129,
-        210,
-        239,
-        217,
-        242,
-        275,
-        297,
-        340,
-        484,
-        535,
-        540,
-        554,
-        612,
-        613,
-        614,
-        615,
-    ):
-        ingredient_list[n].set_in_stock(recipe_list)
-    available = get_available_recipes(recipe_list)
-    for key in available:
-        print(recipe_list[key].name)
-
-"""
 
 
 class StartScreen(Screen):
@@ -400,16 +348,21 @@ class RecipeList(Screen):
         return result
 
     def get_r_list(self):
+        self.ids.r_scroll.clear_widgets()
         for i in data["recipe_list"]:
-            self.ids.r_scroll.add_widget(
-                TwoLineAvatarIconListItem(
-                    text=data["recipe_list"][i].name,
-                    secondary_text=str(i),
-                    secondary_theme_text_color="Custom",
-                    secondary_text_color=(0.188, 0.188, 0.188),
-                    on_press=lambda x, item=i: self.show_recipe(item),
-                )
+            icon_name = "emoticon-sad-outline"
+            if data["recipe_list"][i].available == True:
+                icon_name = "emoticon-happy"
+            icons = IconRightWidget(icon=icon_name)
+            items = TwoLineAvatarIconListItem(
+                text=data["recipe_list"][i].name,
+                secondary_text=str(i),
+                secondary_theme_text_color="Custom",
+                secondary_text_color=(0.188, 0.188, 0.188),
+                on_press=lambda x, item=i: self.show_recipe(item),
             )
+            items.add_widget(icons)
+            self.ids.r_scroll.add_widget(items)
 
     def show_recipe(self, id):
         self.manager.transition.direction = "left"
@@ -460,11 +413,38 @@ class IngredientList(Screen):
 
 class RecipeDisplay(Screen):
     recipe_id = 0
-    recipe_name = StringProperty("Temp Name")
+    recipe_name = StringProperty("Recipe")
+    garnish = StringProperty(" ")
+    instructions = StringProperty(" ")
 
     def get_data(self):
         self.recipe_name = data["recipe_list"][self.recipe_id].name
-        print(data["recipe_list"][self.recipe_id].ingredients_needed)
+        self.garnish = data["recipe_list"][self.recipe_id].garnish
+        self.instructions = data["recipe_list"][self.recipe_id].instructions
+        self.build_list(self.recipe_id)
+
+    def build_list(self, id):
+        global data
+        self.ids.ingredient_scroll.clear_widgets()
+        print(data["recipe_list"][id].name, data["recipe_list"][id].ingredients_needed)
+        for i in data["recipe_list"][id].ingredients_needed:
+            self.add_list_item(i, id)
+
+    def add_list_item(self, i_id, r_id):
+        global data
+        name = data["ingredient_list"][i_id].name
+        amount = "     "
+        if data["recipe_list"][r_id].ingredients_needed[i_id][0] != None:
+            amount = (
+                "     "
+                + str(data["recipe_list"][r_id].ingredients_needed[i_id][0])
+                + " "
+                + str(data["recipe_list"][r_id].ingredients_needed[i_id][1])
+            )
+        self.ids.ingredient_scroll.add_widget(
+            TwoLineAvatarIconListItem(text=name, secondary_text=amount)
+        )
+        print("Name:", name, "\nAmount: ", amount)
 
 
 # main ui app

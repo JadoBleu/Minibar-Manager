@@ -18,7 +18,7 @@ As your project is unique, you will be required to help craft your grading scale
 ## Program Description
 
 ### Minibar Manager
-This program is a helper program that retains an inventory of liquors and other additions available. It will have a database of drink recipes that it will search through based on your available drinks and display possible recipes. The recipes will have a section that allows the user to favorite and add comments to the recipe.
+This program is a helper program that retains an inventory of liquors and other additions available. It will have a database of drink recipes that it will search through based on your available drinks and display possible recipes. ~~The recipes will have a section that allows the user to favorite and add comments to the recipe.(the structure is there, but I am having trouble implementing it into the gui in time.)~~
 
 * The data should be stored in a AWS database to be connected to the program, thus fulfilling the project requirement for the CIT 172 project as well. 
 
