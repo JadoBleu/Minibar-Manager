@@ -115,3 +115,4 @@ venv.bak/
 minibar-env/
 DatabaseBackup/
 tests/
+*.mp4

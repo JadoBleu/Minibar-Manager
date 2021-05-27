@@ -344,7 +344,6 @@ class RecipeList(Screen):
         for n in recipe_list:
             if recipe_list[n].like == like:
                 result.append(recipe_list[n].id)
-        print(result)
         return result
 
     def get_r_list(self):
@@ -426,7 +425,6 @@ class RecipeDisplay(Screen):
     def build_list(self, id):
         global data
         self.ids.ingredient_scroll.clear_widgets()
-        print(data["recipe_list"][id].name, data["recipe_list"][id].ingredients_needed)
         for i in data["recipe_list"][id].ingredients_needed:
             self.add_list_item(i, id)
 
@@ -444,7 +442,6 @@ class RecipeDisplay(Screen):
         self.ids.ingredient_scroll.add_widget(
             TwoLineAvatarIconListItem(text=name, secondary_text=amount)
         )
-        print("Name:", name, "\nAmount: ", amount)
 
 
 # main ui app
